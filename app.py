@@ -24,13 +24,13 @@ with open('secrets.json') as f:
     """ parse configuration file """
     secrets = json.loads(f.read())
 
-    def get_secret(setting, secrets=secrets):
-        """ get the secret variable or return explicit exception. """
-        try:
-            return secrets[setting]
-        except KeyError:
-            error_msg = 'Set the {0} environment variable'.format(setting)
-            print(error_msg)
+def get_secret(setting, secrets=secrets):
+    """ get the secret variable or return explicit exception. """
+    try:
+        return os.environ.get(setting, False) or secrets[setting]
+    except KeyError:
+        error_msg = 'Set the {0} environment variable'.format(setting)
+        print(error_msg)
 
 
 SECRET_KEY = get_secret('SECRET_KEY')
@@ -54,10 +54,10 @@ def table_check():
     except OperationalError:
         pass
 
-    
+
 def toBase62(num, b=62):
     """ calculate Base62 """
-    
+
     if b <= 0 or b > 62:
         return 0
     base = digits + ascii_lowercase + ascii_uppercase
@@ -73,7 +73,7 @@ def toBase62(num, b=62):
 
 def toBase10(num, b=62):
     """ reverse Base62 """
-    
+
     base = digits + ascii_lowercase + ascii_uppercase
     limit = len(num)
     res = 0
@@ -84,13 +84,13 @@ def toBase10(num, b=62):
 
 def calc_md5(fname):
     """ calculate md5sum of the uploaded file """
-    
+
     hash_md5 = md5()
     with open(fname, "rb") as f:
         for chunk in iter(lambda: f.read(4096), b""):
             hash_md5.update(chunk)
     return hash_md5.hexdigest()
-    
+
 
 def file_exists(md5sum):
     """ checks if the file exists in the database by md5sum """
@@ -99,11 +99,11 @@ def file_exists(md5sum):
     if res.fetchone() is None:
         return False
     return True
-        
+
 
 def shorten_filename(fname, md5sum, expire):
     """ generates shortened filename """
-    
+
     res = db.query("""
                    INSERT INTO file (filename, md5sum, expire)
                    VALUES (?,?,?)
@@ -140,7 +140,7 @@ def upload_file():
 
             # calculate md5sum
             md5sum = calc_md5(filename)
-            
+
             new_fname = os.path.join(app.config['UPLOAD_FOLDER'], md5sum)
 
             # check if file exists by hash
@@ -159,7 +159,7 @@ def upload_file():
             # calculate expiration time
             from datetime import datetime, timedelta
             expire = int((datetime.now() + timedelta(days=days)).timestamp())
-            
+
             return shorten_filename(fname, md5sum, expire)
 
     return 'upload file'
